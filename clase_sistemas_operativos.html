@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cap. 1 · Sistemas Operativos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wall-1:#0e2e2b;
+    --wall-2:#122341;
+    --win-bg:#eef1f6;
+    --win-bg-2:#ffffff;
+    --win-header:#1c2541;
+    --amber:#e8a33d;
+    --green:#35c98c;
+    --red:#e2585d;
+    --ink:#1c2541;
+    --ink-soft:#4a5578;
+    --paper:#f5f7fa;
+    --mono:'JetBrains Mono', monospace;
+    --sans:'Inter', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; font-family:var(--sans); color:var(--ink);
+    background:
+      radial-gradient(circle at 15% 15%, rgba(232,163,61,0.10), transparent 45%),
+      linear-gradient(155deg, var(--wall-1), var(--wall-2) 70%);
+    overflow-x:hidden;
+  }
+
+  /* ---------- BOOT SCREEN ---------- */
+  #boot-screen{
+    position:fixed; inset:0; background:#050b0a; color:#8fe6c2;
+    font-family:var(--mono); font-size:14px; padding:32px; z-index:999;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  #boot-screen .cursor{display:inline-block; width:8px; background:#8fe6c2; animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+  #boot-screen.hide{ animation:fadeOut .6s ease forwards; }
+  @keyframes fadeOut{ to{opacity:0; visibility:hidden;} }
+
+  /* ---------- DESKTOP ---------- */
+  #desktop{ position:relative; min-height:100vh; padding-bottom:70px; opacity:0; }
+  #desktop.show{ animation:fadeIn .7s ease forwards; }
+  @keyframes fadeIn{ to{opacity:1;} }
+
+  .wallpaper-tag{
+    position:absolute; top:18px; right:24px; color:rgba(255,255,255,0.35);
+    font-family:var(--mono); font-size:12px; letter-spacing:.08em;
+  }
+
+  .icons{
+    display:grid; grid-template-columns:repeat(auto-fill, 92px); gap:18px;
+    padding:32px 24px; max-width:1000px;
+  }
+  .icon{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    cursor:pointer; padding:10px 6px; border-radius:10px; text-align:center;
+    color:#f2f4f8; user-select:none;
+  }
+  .icon:hover, .icon:focus-visible{ background:rgba(255,255,255,0.08); outline:none; }
+  .icon .glyph{
+    font-size:30px; width:52px; height:52px; display:flex; align-items:center; justify-content:center;
+    background:var(--win-bg-2); border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.35);
+  }
+  .icon span.label{ font-size:11.5px; line-height:1.25; font-family:var(--mono); }
+
+  /* ---------- WINDOWS ---------- */
+  .window{
+    display:none; position:relative; max-width:760px; margin:18px auto 40px;
+    background:var(--win-bg); border-radius:12px; overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,0.45);
+    animation:pop .25s ease;
+  }
+  @keyframes pop{ from{transform:scale(.97); opacity:0;} to{transform:scale(1); opacity:1;} }
+  .window.active{ display:block; }
+  .win-header{
+    background:var(--win-header); color:#fff; padding:10px 14px;
+    display:flex; align-items:center; justify-content:space-between; font-family:var(--mono); font-size:13px;
+  }
+  .win-header .title{ display:flex; align-items:center; gap:8px; }
+  .win-controls button{
+    width:22px; height:22px; border:none; border-radius:6px; margin-left:6px; cursor:pointer;
+    font-family:var(--mono); font-size:12px; color:#1c2541;
+  }
+  .win-controls .min{ background:var(--amber); }
+  .win-controls .close{ background:var(--red); color:#fff; }
+  .win-body{ padding:22px 26px 28px; line-height:1.62; font-size:15px; }
+  .win-body h3{ font-family:var(--mono); font-size:15px; color:var(--win-header); margin-top:26px; }
+  .win-body h3:first-child{ margin-top:0; }
+  .eyebrow{
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.08em; color:var(--ink-soft);
+    text-transform:uppercase; margin-bottom:4px; display:block;
+  }
+
+  table.data{ width:100%; border-collapse:collapse; margin:14px 0 6px; font-size:14px; }
+  table.data th, table.data td{ border:1px solid #d7dce6; padding:8px 10px; text-align:left; }
+  table.data th{ background:#dfe4ee; font-family:var(--mono); font-size:12.5px; }
+
+  .callout{
+    background:#fff4e0; border-left:4px solid var(--amber); border-radius:8px;
+    padding:14px 16px; margin:18px 0; font-size:14px;
+  }
+  .callout strong{ font-family:var(--mono); }
+
+  /* objectives checklist */
+  .obj-list{ list-style:none; padding:0; margin:0; }
+  .obj-list li{ display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px dashed #d7dce6; }
+  .obj-list input{ margin-top:3px; width:16px; height:16px; accent-color:var(--green); }
+  .obj-list li.done span{ text-decoration:line-through; color:var(--ink-soft); }
+
+  /* reflection box */
+  textarea.reflect{
+    width:100%; min-height:90px; border:1px solid #c9d0e0; border-radius:8px; padding:10px 12px;
+    font-family:var(--sans); font-size:14px; resize:vertical; margin-top:10px;
+  }
+  .hint-btn, .reveal-btn, .lab-btn{
+    background:var(--win-header); color:#fff; border:none; border-radius:7px;
+    padding:8px 14px; font-family:var(--mono); font-size:12.5px; cursor:pointer; margin-top:10px;
+  }
+  .hint-btn:hover, .reveal-btn:hover, .lab-btn:hover{ opacity:.88; }
+
+  /* matching activity */
+  .match-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 0; border-bottom:1px solid #e2e6ee; }
+  .match-row .elem{ font-family:var(--mono); font-weight:700; min-width:150px; }
+  .match-row .opts{ display:flex; gap:6px; flex-wrap:wrap; }
+  .opt-btn{
+    border:1px solid #c9d0e0; background:#fff; border-radius:20px; padding:5px 12px;
+    font-size:12.5px; cursor:pointer; font-family:var(--sans);
+  }
+  .opt-btn.correct{ background:var(--green); color:#fff; border-color:var(--green); }
+  .opt-btn.wrong{ background:var(--red); color:#fff; border-color:var(--red); }
+  #score-box{ font-family:var(--mono); font-size:13px; margin-top:14px; color:var(--win-header); }
+
+  /* lab steps */
+  .lab-step{ display:flex; gap:10px; padding:9px 0; border-bottom:1px dashed #d7dce6; align-items:flex-start; }
+  .lab-step input[type=checkbox]{ margin-top:3px; width:16px; height:16px; accent-color:var(--amber); }
+  .lab-step.done span.step-text{ color:var(--ink-soft); text-decoration:line-through; }
+  .lab-fields{ margin-top:14px; display:grid; gap:10px; }
+  .lab-fields input[type=text]{ width:100%; border:1px solid #c9d0e0; border-radius:7px; padding:8px 10px; font-family:var(--sans); font-size:13.5px; }
+  #lab-progress{ font-family:var(--mono); font-size:12.5px; color:var(--ink-soft); margin-top:8px; }
+
+  /* quiz */
+  .quiz-item{ margin-bottom:20px; }
+  .quiz-item p.q{ font-weight:600; margin-bottom:6px; }
+  .answer-box{ display:none; background:#e9f9f1; border-left:4px solid var(--green); border-radius:8px; padding:10px 12px; margin-top:8px; font-size:13.5px; }
+  .answer-box.show{ display:block; }
+
+  /* flashcards */
+  .cards{ display:grid; grid-template-columns:repeat(auto-fill, minmax(130px,1fr)); gap:12px; margin-top:8px; }
+  .card{ perspective:800px; height:96px; cursor:pointer; }
+  .card-inner{ position:relative; width:100%; height:100%; transition:transform .5s; transform-style:preserve-3d; }
+  .card.flipped .card-inner{ transform:rotateY(180deg); }
+  .card-face{
+    position:absolute; inset:0; backface-visibility:hidden; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; text-align:center; padding:8px;
+    font-size:12.5px; box-shadow:0 3px 8px rgba(0,0,0,0.15);
+  }
+  .card-front{ background:var(--win-header); color:#fff; font-family:var(--mono); }
+  .card-back{ background:#fff; color:var(--ink); transform:rotateY(180deg); border:1px solid #d7dce6; }
+
+  /* notification */
+  .notification{
+    position:fixed; bottom:70px; right:18px; max-width:300px; background:var(--win-bg-2);
+    border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,0.35); padding:14px 16px;
+    font-size:13px; z-index:200; border-left:4px solid var(--amber);
+  }
+  .notification.hidden{ display:none; }
+  .notification h4{ margin:0 0 4px; font-family:var(--mono); font-size:12.5px; }
+
+  /* taskbar */
+  .taskbar{
+    position:fixed; left:0; right:0; bottom:0; height:52px; background:rgba(10,20,30,0.88);
+    backdrop-filter:blur(6px); display:flex; align-items:center; gap:10px; padding:0 14px; z-index:150;
+    border-top:1px solid rgba(255,255,255,0.08);
+  }
+  #start-btn{
+    background:var(--amber); border:none; border-radius:8px; padding:8px 14px; font-family:var(--mono);
+    font-weight:700; cursor:pointer; font-size:13px;
+  }
+  .open-tabs{ display:flex; gap:6px; flex:1; overflow-x:auto; }
+  .tab{
+    background:rgba(255,255,255,0.1); color:#fff; border:none; border-radius:7px; padding:7px 12px;
+    font-size:12px; font-family:var(--mono); cursor:pointer; white-space:nowrap;
+  }
+  .tab.active{ background:var(--amber); color:#1c2541; }
+  .clock{ color:#fff; font-family:var(--mono); font-size:13px; min-width:70px; text-align:right; }
+
+  #start-menu{
+    position:fixed; bottom:58px; left:14px; background:var(--win-bg-2); border-radius:10px; padding:8px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.4); display:none; flex-direction:column; gap:2px; z-index:160; min-width:210px;
+  }
+  #start-menu.show{ display:flex; }
+  #start-menu button{
+    background:none; border:none; text-align:left; padding:9px 10px; border-radius:6px; cursor:pointer;
+    font-family:var(--sans); font-size:13.5px; color:var(--ink);
+  }
+  #start-menu button:hover{ background:#eef1f6; }
+
+  @media (max-width:600px){
+    .window{ margin:12px 10px 32px; }
+    .win-body{ padding:16px 16px 22px; }
+    .icons{ grid-template-columns:repeat(auto-fill, 78px); gap:12px; padding:24px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="boot-screen">
+  <div id="boot-lines"></div>
+</div>
+
+<div id="desktop">
+  <div class="wallpaper-tag">SISTEMAS_OPERATIVOS · CAP.1</div>
+
+  <div class="icons" id="icon-grid">
+    <div class="icon" data-app="presentacion" tabindex="0"><div class="glyph">📄</div><span class="label">Presentación.txt</span></div>
+    <div class="icon" data-app="objetivos" tabindex="0"><div class="glyph">🎯</div><span class="label">Objetivos.app</span></div>
+    <div class="icon" data-app="competencia" tabindex="0"><div class="glyph">📋</div><span class="label">Competencia.doc</span></div>
+    <div class="icon" data-app="pregunta" tabindex="0"><div class="glyph">💬</div><span class="label">Pregunta.chat</span></div>
+    <div class="icon" data-app="sistema" tabindex="0"><div class="glyph">🖥️</div><span class="label">Sistema.exe</span></div>
+    <div class="icon" data-app="actividad" tabindex="0"><div class="glyph">🧩</div><span class="label">Actividad.exe</span></div>
+    <div class="icon" data-app="lab" tabindex="0"><div class="glyph">🧪</div><span class="label">Lab_01.exe</span></div>
+    <div class="icon" data-app="quiz" tabindex="0"><div class="glyph">📝</div><span class="label">Autoeval.exe</span></div>
+    <div class="icon" data-app="glosario" tabindex="0"><div class="glyph">🗂️</div><span class="label">Glosario.exe</span></div>
+  </div>
+
+  <!-- WINDOW: Presentación -->
+  <div class="window" id="win-presentacion">
+    <div class="win-header"><div class="title">📄 Presentación.txt</div>
+      <div class="win-controls"><button class="min" data-min="presentacion">–</button><button class="close" data-close="presentacion">✕</button></div>
+    </div>
+    <div class="win-body">
+      <span class="eyebrow">1. Presentación</span>
+      <p>Cada vez que encendemos una computadora, un teléfono móvil o una tableta ocurre una secuencia de procesos que normalmente pasa desapercibida para el usuario. En pocos segundos el equipo está listo para trabajar gracias a un software especializado denominado <strong>Sistema Operativo</strong>.</p>
+      <p>Este capítulo introduce al estudiante en la comprensión científica de ese proceso y constituye la base para el estudio del módulo <em>Sistemas Operativos y Aplicaciones</em>.</p>
+      <div class="callout"><strong>Antes de seguir:</strong> mira la secuencia de arranque que acaba de mostrarse al abrir esta clase — eso mismo es lo que estudiaremos hoy, explicado paso a paso.</div>
+    </div>
+  </div>
+
+  <!-- WINDOW: Objetivos -->
+  <div class="window" id="win-objetivos">
+    <div class="win-header"><div class="title">🎯 Objetivos.app</div>
+      <div class="win-controls"><button class="min" data-min="objetivos">–</button><button class="close" data-close="objetivos">✕</button></div>
+    </div>
+    <div class="win-body">
+      <span class="eyebrow">2. Objetivos de aprendizaje</span>
+      <p>Marca cada objetivo a medida que sientas que lo dominas. Es solo para tu autoseguimiento.</p>
+      <ul class="obj-list" id="obj-list">
+        <li><input type="checkbox"><span>Comprender qué es un sistema operativo y su importancia.</span></li>
+        <li><input type="checkbox"><span>Explicar la relación entre hardware, software y usuario.</span></li>
+        <li><input type="checkbox"><span>Identificar las funciones principales de un sistema operativo.</span></li>
+        <li><input type="checkbox"><span>Reconocer los principales sistemas operativos actuales.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- WINDOW: Competencia -->
+  <div class="window" id="win-competencia">
+    <div class="win-header"><div class="title">📋 Competencia.doc</div>
+      <div class="win-controls"><button class="min" data-min="competencia">–</button><button class="close" data-close="competencia">✕</button></div>
+    </div>
+    <div class="win-body">
+      <span class="eyebrow">3. Competencia del módulo</span>
+      <p>Aplicar procesos de instalación y configuración de hardware, software y redes, garantizando la operatividad de los equipos.</p>
+    </div>
+  </div>
+
+  <!-- WINDOW: Pregunta motivadora -->
+  <div class="window" id="win-pregunta">
+    <div class="win-header"><div class="title">💬 Pregunta.chat</div>
+      <div class="win-controls"><button class="min" data-min="pregunta">–</button><button class="close" data-close="pregunta">✕</button></div>
+    </div>
+    <div class="win-body">
+      <span class="eyebrow">4. Pregunta motivadora</span>
+      <p><strong>¿Qué sucede dentro de una computadora desde que presionamos el botón de encendido hasta que aparece el escritorio del sistema operativo?</strong></p>
+      <p>Escribe tu hipótesis antes de leer la teoría. No hay respuesta incorrecta, es para activar lo que ya intuyes:</p>
+      <textarea class="reflect" placeholder="Escribe aquí tu idea..."></textarea>
+    </div>
+  </div>
+
+  <!-- WINDOW: Sistema / SO -->
+  <div class="window" id="win-sistema">
+    <div class="win-header"><div class="title">🖥️ Sistema.exe</div>
+      <div class="win-controls"><button class="min" data-min="sistema">–</button><button class="close" data-close="sistema">✕</button></div>
+    </div>
+    <div class="win-body">
+      <h3>5.1 ¿Qué es un sistema?</h3>
+      <p>Un sistema es un conjunto de elementos organizados que interactúan entre sí para alcanzar un objetivo. Cada elemento cumple una función y depende de los demás.</p>
+
+      <h3>5.2 ¿Qué es un sistema informático?</h3>
+      <p>Está formado por hardware, software, datos, procedimientos y usuarios. Todos estos componentes trabajan coordinadamente para transformar datos en información útil.</p>
+      <table class="data">
+        <tr><th>Componente</th><th>Función</th></tr>
+        <tr><td>Hardware</td><td>Componentes físicos del computador.</td></tr>
+        <tr><td>Software</td><td>Programas que controlan el hardware.</td></tr>
+        <tr><td>Datos</td><td>Información procesada por el sistema.</td></tr>
+        <tr><td>Usuario</td><td>Persona que interactúa con el sistema.</td></tr>
+        <tr><td>Procedimientos</td><td>Normas y pasos para utilizar correctamente el sistema.</td></tr>
+      </table>
+
+      <h3>5.3 ¿Qué es un sistema operativo?</h3>
+      <p>Es el software principal de un computador. Actúa como intermediario entre el usuario, las aplicaciones y el hardware, administrando todos los recursos del equipo.</p>
+      <button class="hint-btn" id="btn-notif">Mostrar "¿Sabías que?"</button>
+    </div>
+  </div>
+
+  <!-- WINDOW: Actividad -->
+  <div class="window" id="win-actividad">
+    <div class="win-header"><div class="title">🧩 Actividad.exe</div>
+      <div class="win-controls"><button class="min" data-min="actividad">–</button><button class="close" data-close="actividad">✕</button></div>
+    </div>
+    <div class="win-body">
+      <span class="eyebrow">6. Actividad en clase</span>
+      <p>Clasifica cada elemento como <strong>Hardware</strong>, <strong>Software</strong>, <strong>Usuario</strong>, <strong>Dato</strong> o <strong>Procedimiento</strong>. Haz clic en tu respuesta.</p>
+      <div id="match-container"></div>
+      <div id="score-box">Puntaje: 0 / 8</div>
+    </div>
+  </div>
+
+  <!-- WINDOW: Laboratorio -->
+  <div class="window" id="win-lab">
+    <div class="win-header"><div class="title">🧪 Lab_01.exe</div>
+      <div class="win-controls"><button class="min" data-min="lab">–</button><button class="close" data-close="lab">✕</button></div>
+    </div>
+    <div class="win-body">
+      <span class="eyebrow">7. Laboratorio 1</span>
+      <p><strong>Identificación del sistema operativo del computador.</strong></p>
+      <div id="lab-steps">
+        <div class="lab-step"><input type="checkbox"><span class="step-text">Encienda el computador.</span></div>
+        <div class="lab-step"><input type="checkbox"><span class="step-text">Presione Windows + R.</span></div>
+        <div class="lab-step"><input type="checkbox"><span class="step-text">Escriba <code>winver</code> y presione Enter.</span></div>
+        <div class="lab-step"><input type="checkbox"><span class="step-text">Registre la edición, versión y compilación del sistema operativo.</span></div>
+        <div class="lab-step"><input type="checkbox"><span class="step-text">Investigue si existe una versión más reciente.</span></div>
+      </div>
+      <div id="lab-progress">0 / 5 pasos completados</div>
+      <div class="lab-fields">
+        <input type="text" id="lab-edicion" placeholder="Edición, versión y compilación registradas...">
+        <input type="text" id="lab-actualizacion" placeholder="¿Existe una versión más reciente? Anota lo que investigaste...">
+      </div>
+    </div>
+  </div>
+
+  <!-- WINDOW: Autoevaluación -->
+  <div class="window" id="win-quiz">
+    <div class="win-header"><div class="title">📝 Autoeval.exe</div>
+      <div class="win-controls"><button class="min" data-min="quiz">–</button><button class="close" data-close="quiz">✕</button></div>
+    </div>
+    <div class="win-body">
+      <span class="eyebrow">8. Autoevaluación</span>
+      <div class="quiz-item">
+        <p class="q">1. Defina con sus palabras qué es un sistema operativo.</p>
+        <textarea class="reflect" placeholder="Tu respuesta..."></textarea>
+        <button class="reveal-btn" data-reveal="q1">Ver pista</button>
+        <div class="answer-box" id="ans-q1">Es el software principal del computador: administra los recursos del equipo y actúa de intermediario entre el usuario, las aplicaciones y el hardware.</div>
+      </div>
+      <div class="quiz-item">
+        <p class="q">2. Mencione tres funciones del sistema operativo.</p>
+        <textarea class="reflect" placeholder="Tu respuesta..."></textarea>
+        <button class="reveal-btn" data-reveal="q2">Ver pista</button>
+        <div class="answer-box" id="ans-q2">Administrar los recursos del equipo, ejecutar las aplicaciones y permitir la interacción entre el usuario y el hardware.</div>
+      </div>
+      <div class="quiz-item">
+        <p class="q">3. ¿Cuál es la diferencia entre hardware y software?</p>
+        <textarea class="reflect" placeholder="Tu respuesta..."></textarea>
+        <button class="reveal-btn" data-reveal="q3">Ver pista</button>
+        <div class="answer-box" id="ans-q3">El hardware son los componentes físicos del computador; el software son los programas que controlan ese hardware.</div>
+      </div>
+      <div class="quiz-item">
+        <p class="q">4. ¿Qué componente administra la memoria RAM?</p>
+        <textarea class="reflect" placeholder="Tu respuesta..."></textarea>
+        <button class="reveal-btn" data-reveal="q4">Ver pista</button>
+        <div class="answer-box" id="ans-q4">El sistema operativo, a través de su kernel o núcleo.</div>
+      </div>
+      <div class="quiz-item">
+        <p class="q">5. ¿Por qué un computador no puede ser útil sin un sistema operativo?</p>
+        <textarea class="reflect" placeholder="Tu respuesta..."></textarea>
+        <button class="reveal-btn" data-reveal="q5">Ver pista</button>
+        <div class="answer-box" id="ans-q5">Porque no habría forma de administrar el hardware ni de ejecutar aplicaciones: el sistema operativo es el intermediario necesario entre el usuario y el equipo.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WINDOW: Glosario -->
+  <div class="window" id="win-glosario">
+    <div class="win-header"><div class="title">🗂️ Glosario.exe</div>
+      <div class="win-controls"><button class="min" data-min="glosario">–</button><button class="close" data-close="glosario">✕</button></div>
+    </div>
+    <div class="win-body">
+      <span class="eyebrow">9. Glosario — clic en cada tarjeta para ver la definición</span>
+      <div class="cards" id="glossary-cards"></div>
+    </div>
+  </div>
+
+  <div class="notification hidden" id="notification">
+    <h4>💡 ¿Sabías que?</h4>
+    <p>Android, Windows, Linux, macOS e iOS son sistemas operativos. Aunque funcionan en dispositivos diferentes, todos cumplen funciones similares: administrar recursos, ejecutar aplicaciones y permitir la interacción con el usuario.</p>
+  </div>
+
+  <div id="start-menu"></div>
+
+  <div class="taskbar">
+    <button id="start-btn">⊞ Inicio</button>
+    <div class="open-tabs" id="open-tabs"></div>
+    <div class="clock" id="clock">--:--</div>
+  </div>
+</div>
+
+<script>
+const apps = [
+  {id:'presentacion', label:'Presentación.txt', icon:'📄'},
+  {id:'objetivos', label:'Objetivos.app', icon:'🎯'},
+  {id:'competencia', label:'Competencia.doc', icon:'📋'},
+  {id:'pregunta', label:'Pregunta.chat', icon:'💬'},
+  {id:'sistema', label:'Sistema.exe', icon:'🖥️'},
+  {id:'actividad', label:'Actividad.exe', icon:'🧩'},
+  {id:'lab', label:'Lab_01.exe', icon:'🧪'},
+  {id:'quiz', label:'Autoeval.exe', icon:'📝'},
+  {id:'glosario', label:'Glosario.exe', icon:'🗂️'}
+];
+
+/* ---------- BOOT SEQUENCE ---------- */
+const bootLines = [
+  "BIOS v2.6 — INICIANDO POST...",
+  "Verificando memoria RAM ......... OK",
+  "Detectando unidades de almacenamiento ... OK",
+  "Cargando kernel del sistema operativo...",
+  "Montando sistema de archivos...",
+  "Iniciando servicios de usuario...",
+  "Preparando escritorio...",
+  "Bienvenido/a al Capítulo 1 · Sistemas Operativos"
+];
+const bootEl = document.getElementById('boot-lines');
+let li = 0;
+function typeNextLine(){
+  if(li >= bootLines.length){
+    setTimeout(()=>{
+      document.getElementById('boot-screen').classList.add('hide');
+      const desk = document.getElementById('desktop');
+      desk.classList.add('show');
+      setTimeout(()=>document.getElementById('boot-screen').style.display='none', 650);
+    }, 500);
+    return;
+  }
+  const p = document.createElement('div');
+  p.textContent = bootLines[li];
+  bootEl.appendChild(p);
+  li++;
+  setTimeout(typeNextLine, 260);
+}
+typeNextLine();
+
+/* ---------- CLOCK ---------- */
+function tickClock(){
+  const d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleTimeString('es-EC', {hour:'2-digit', minute:'2-digit'});
+}
+tickClock();
+setInterval(tickClock, 1000*30);
+
+/* ---------- WINDOW MANAGEMENT ---------- */
+const openTabsEl = document.getElementById('open-tabs');
+let openApps = [];
+
+function renderTabs(){
+  openTabsEl.innerHTML = '';
+  openApps.forEach(id=>{
+    const app = apps.find(a=>a.id===id);
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (document.getElementById('win-'+id).classList.contains('active') ? ' active' : '');
+    btn.textContent = app.icon + ' ' + app.label;
+    btn.onclick = ()=> openWindow(id);
+    openTabsEl.appendChild(btn);
+  });
+}
+
+function openWindow(id){
+  document.querySelectorAll('.window').forEach(w=>w.classList.remove('active'));
+  document.getElementById('win-'+id).classList.add('active');
+  if(!openApps.includes(id)) openApps.push(id);
+  renderTabs();
+  document.getElementById('win-'+id).scrollIntoView({behavior:'smooth', block:'start'});
+}
+function minimizeWindow(id){
+  document.getElementById('win-'+id).classList.remove('active');
+  renderTabs();
+}
+function closeWindow(id){
+  document.getElementById('win-'+id).classList.remove('active');
+  openApps = openApps.filter(a=>a!==id);
+  renderTabs();
+}
+
+document.querySelectorAll('.icon').forEach(icon=>{
+  const go = ()=> openWindow(icon.dataset.app);
+  icon.addEventListener('click', go);
+  icon.addEventListener('keypress', e=>{ if(e.key==='Enter') go(); });
+});
+document.querySelectorAll('[data-min]').forEach(b=> b.addEventListener('click', ()=> minimizeWindow(b.dataset.min)));
+document.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', ()=> closeWindow(b.dataset.close)));
+
+/* ---------- START MENU ---------- */
+const startMenu = document.getElementById('start-menu');
+apps.forEach(a=>{
+  const btn = document.createElement('button');
+  btn.textContent = a.icon + '  ' + a.label;
+  btn.onclick = ()=>{ openWindow(a.id); startMenu.classList.remove('show'); };
+  startMenu.appendChild(btn);
+});
+document.getElementById('start-btn').addEventListener('click', e=>{
+  e.stopPropagation();
+  startMenu.classList.toggle('show');
+});
+document.addEventListener('click', ()=> startMenu.classList.remove('show'));
+
+/* ---------- OBJETIVOS CHECKLIST ---------- */
+document.querySelectorAll('#obj-list input').forEach(cb=>{
+  cb.addEventListener('change', ()=> cb.closest('li').classList.toggle('done', cb.checked));
+});
+
+/* ---------- NOTIFICATION ---------- */
+document.getElementById('btn-notif').addEventListener('click', ()=>{
+  const n = document.getElementById('notification');
+  n.classList.remove('hidden');
+  setTimeout(()=> n.classList.add('hidden'), 7000);
+});
+
+/* ---------- MATCHING ACTIVITY ---------- */
+const matchData = [
+  {elem:'Windows', answer:'Software'},
+  {elem:'Memoria RAM', answer:'Hardware'},
+  {elem:'Profesor', answer:'Usuario'},
+  {elem:'Archivo PDF', answer:'Dato'},
+  {elem:'Impresora', answer:'Hardware'},
+  {elem:'Reiniciar el equipo', answer:'Procedimiento'},
+  {elem:'Linux', answer:'Software'},
+  {elem:'SSD', answer:'Hardware'}
+];
+const categories = ['Hardware','Software','Usuario','Dato','Procedimiento'];
+const matchContainer = document.getElementById('match-container');
+let score = 0;
+const solved = new Set();
+
+matchData.forEach((item, idx)=>{
+  const row = document.createElement('div');
+  row.className = 'match-row';
+  const elemDiv = document.createElement('div');
+  elemDiv.className = 'elem';
+  elemDiv.textContent = item.elem;
+  row.appendChild(elemDiv);
+  const optsDiv = document.createElement('div');
+  optsDiv.className = 'opts';
+  categories.forEach(cat=>{
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = cat;
+    btn.addEventListener('click', ()=>{
+      if(solved.has(idx)) return;
+      if(cat === item.answer){
+        btn.classList.add('correct');
+        solved.add(idx);
+        score++;
+        document.getElementById('score-box').textContent = 'Puntaje: ' + score + ' / 8';
+        optsDiv.querySelectorAll('button').forEach(b=> b.disabled = true);
+      } else {
+        btn.classList.add('wrong');
+        setTimeout(()=> btn.classList.remove('wrong'), 500);
+      }
+    });
+    optsDiv.appendChild(btn);
+  });
+  row.appendChild(optsDiv);
+  matchContainer.appendChild(row);
+});
+
+/* ---------- LAB CHECKLIST ---------- */
+const labSteps = document.querySelectorAll('#lab-steps .lab-step input');
+labSteps.forEach(cb=>{
+  cb.addEventListener('change', ()=>{
+    cb.closest('.lab-step').classList.toggle('done', cb.checked);
+    const done = document.querySelectorAll('#lab-steps input:checked').length;
+    document.getElementById('lab-progress').textContent = done + ' / 5 pasos completados';
+  });
+});
+
+/* ---------- QUIZ REVEAL ---------- */
+document.querySelectorAll('[data-reveal]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const box = document.getElementById('ans-' + btn.dataset.reveal);
+    box.classList.toggle('show');
+    btn.textContent = box.classList.contains('show') ? 'Ocultar pista' : 'Ver pista';
+  });
+});
+
+/* ---------- GLOSSARY FLASHCARDS ---------- */
+const glossary = [
+  {term:'Hardware', def:'Componentes físicos.'},
+  {term:'Software', def:'Programas.'},
+  {term:'Kernel', def:'Núcleo del sistema operativo.'},
+  {term:'Firmware', def:'Software integrado en el hardware.'},
+  {term:'Boot', def:'Proceso de arranque del equipo.'}
+];
+const cardsWrap = document.getElementById('glossary-cards');
+glossary.forEach(g=>{
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="card-inner">
+      <div class="card-face card-front">${g.term}</div>
+      <div class="card-face card-back">${g.def}</div>
+    </div>`;
+  card.addEventListener('click', ()=> card.classList.toggle('flipped'));
+  cardsWrap.appendChild(card);
+});
+</script>
+</body>
+</html>
