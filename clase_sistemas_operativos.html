@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cap. 1 · Sistemas Operativos</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f2a52">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sist. Operativos">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -237,6 +244,10 @@
   #save-btn{
     background:var(--amber); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-family:var(--mono);
     font-weight:700; cursor:pointer; font-size:12.5px;
+  }
+  #install-btn{
+    display:none; align-items:center; gap:6px; background:var(--green); color:#fff; border:none;
+    border-radius:8px; padding:8px 14px; font-family:var(--mono); font-weight:700; cursor:pointer; font-size:12.5px;
   }
   .open-tabs{ display:flex; gap:6px; flex:1; overflow-x:auto; }
   .tab{
@@ -495,6 +506,7 @@
     <button id="start-btn">⊞ Inicio</button>
     <div class="open-tabs" id="open-tabs"></div>
     <button id="save-btn">💾 Guardar respuestas</button>
+    <button id="install-btn">⬇️ Instalar app</button>
     <div class="clock" id="clock">--:--</div>
   </div>
 </div>
@@ -804,6 +816,28 @@ document.getElementById('send-main-btn').addEventListener('click', sendData);
 document.getElementById('save-btn').addEventListener('click', ()=>{
   openWindow('enviar');
   renderSummary(gatherData());
+});
+
+/* ---------- PWA: SERVICE WORKER + INSTALL PROMPT ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const installBtn = document.getElementById('install-btn');
+  if(installBtn) installBtn.style.display = 'inline-flex';
+});
+document.addEventListener('click', (e)=>{
+  if(e.target && e.target.id === 'install-btn' && deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.addEventListener?.('userChoice', ()=>{});
+    deferredInstallPrompt = null;
+    document.getElementById('install-btn').style.display = 'none';
+  }
 });
 </script>
 </body>

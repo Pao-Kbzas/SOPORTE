@@ -1,0 +1,31 @@
+{
+  "name": "Sistemas Operativos - U.E. Simón Bolívar",
+  "short_name": "Sist. Operativos",
+  "description": "Clase interactiva del Capítulo 1: Sistemas Operativos - Unidad Educativa Simón Bolívar",
+  "start_url": "./clase_sistemas_operativos.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#081b36",
+  "theme_color": "#0f2a52",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
